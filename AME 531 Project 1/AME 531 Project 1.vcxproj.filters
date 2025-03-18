@@ -27,6 +27,9 @@
     <ClCompile Include="exact_solver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="runge_kutta_solver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="explicit_solver.h">
@@ -36,6 +39,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="exact_solver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="matplotlib\matplotlibcpp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="runge_kutta_solver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
