@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
+#include <filesystem>
 #include "explicit_solver.h"
 #include "implicit_solver.h"
 #include "exact_solver.h"
@@ -36,11 +37,14 @@ std::vector<double> flow_rate_values; // Flow rate values
 void initialize(int Ny);
 void applyBoundaryConditions(int Ny);
 void solveNavierStokes(int solverType, double dt, int numSteps, int Ny);
-void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl);
+void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl, double flow_rate);
 void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, int Ny, const std::vector<double>& cfl_values, const std::vector<double>& time_steps, const std::vector<double>& u_max_values, const std::vector<double>& flow_rate_values);
 std::unordered_map<std::string, double> readVariablesFromFile(const std::string& filename);
 
 int main() {
+    // Print the current working directory
+    std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
+
     int solverType;
     std::unordered_map<std::string, double> variables = readVariablesFromFile("input.k");
 
@@ -196,11 +200,11 @@ void solveNavierStokes(int solverType, double dt, int numSteps, int Ny) {
         // Calculate CFL number if explicit solver is used
         double cfl = 0.0;
         double u_max = *std::max_element(u.begin(), u.end());
-        if (solverType == 0) {
+        //if (solverType == 0) {
             cfl = u_max * dt / dy;
             cfl_values.push_back(cfl);
             time_steps.push_back(t * dt);
-        }
+        //}
 
         // Store u_max values
         u_max_values.push_back(u_max);
@@ -213,7 +217,7 @@ void solveNavierStokes(int solverType, double dt, int numSteps, int Ny) {
         flow_rate_values.push_back(flow_rate);
 
         if (t % printStepInterval == 0) {
-            printVelocities(u, u_exact, cfl); // Print velocities and exact solution at specified intervals
+            printVelocities(u, u_exact, cfl, flow_rate); // Print velocities, exact solution, CFL, and flow rate at specified intervals
             plotVelocities(u, u_exact, Ny, cfl_values, time_steps, u_max_values, flow_rate_values);
             plt::draw(); // Update the plot
             plt::pause(0.01); // Pause for a short time to create animation effect
@@ -228,7 +232,7 @@ void solveNavierStokes(int solverType, double dt, int numSteps, int Ny) {
     std::cin.get();
 }
 
-void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl) {
+void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl, double flow_rate) {
     std::cout << "Velocities: ";
     for (const auto& vel : u) {
         std::cout << vel << " ";
@@ -242,6 +246,7 @@ void printVelocities(const std::vector<double>& u, const std::vector<double>& u_
     std::cout << std::endl;
 
     std::cout << "CFL Number: " << cfl << std::endl;
+    std::cout << "Flow Rate: " << flow_rate << std::endl;
 }
 
 void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, int Ny, const std::vector<double>& cfl_values, const std::vector<double>& time_steps, const std::vector<double>& u_max_values, const std::vector<double>& flow_rate_values) {
@@ -257,15 +262,15 @@ void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_e
     plt::ylabel("y");
     plt::legend();
 
-    plt::subplot(4, 1, 2);
-    plt::semilogy(time_steps, cfl_values, "g-");
-    plt::xlabel("Time");
-    plt::ylabel("CFL");
+    //plt::subplot(4, 1, 2);
+    //plt::semilogy(time_steps, cfl_values, "g-");
+    //plt::xlabel("Time");
+    //plt::ylabel("CFL");
 
-    plt::subplot(4, 1, 3);
-    plt::plot(time_steps, u_max_values, "b-");
-    plt::xlabel("Time");
-    plt::ylabel("u_max");
+    //plt::subplot(4, 1, 3);
+    //plt::plot(time_steps, u_max_values, "b-");
+    //plt::xlabel("Time");
+    //plt::ylabel("u_max");
 
     plt::subplot(4, 1, 4);
     plt::plot(time_steps, flow_rate_values, "m-");
