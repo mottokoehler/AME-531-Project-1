@@ -14,7 +14,7 @@ void rungeKuttaSolver(std::vector<double>& u, double dt, double dy, double nu, d
 
     // Calculate k2
     for (int j = 1; j < u.size() - 1; ++j) {
-        u_temp[j] = u[j] + 0.5 * k1[j];
+        u_temp[j] = u[j] + 0.5 * k1[j];  //u*_n+1/2
     }
     for (int j = 1; j < u.size() - 1; ++j) {
         k2[j] = dt * (nu * (u_temp[j + 1] - 2 * u_temp[j] + u_temp[j - 1]) / (dy * dy) - dpdx / rho);
@@ -22,7 +22,7 @@ void rungeKuttaSolver(std::vector<double>& u, double dt, double dy, double nu, d
 
     // Calculate k3
     for (int j = 1; j < u.size() - 1; ++j) {
-        u_temp[j] = u[j] + 0.5 * k2[j];
+        u_temp[j] = u[j] + 0.5 * k2[j];  //u**_n+1/2
     }
     for (int j = 1; j < u.size() - 1; ++j) {
         k3[j] = dt * (nu * (u_temp[j + 1] - 2 * u_temp[j] + u_temp[j - 1]) / (dy * dy) - dpdx / rho);
@@ -30,7 +30,7 @@ void rungeKuttaSolver(std::vector<double>& u, double dt, double dy, double nu, d
 
     // Calculate k4
     for (int j = 1; j < u.size() - 1; ++j) {
-        u_temp[j] = u[j] + k3[j];
+        u_temp[j] = u[j] + k3[j];  //u*_n+1
     }
     for (int j = 1; j < u.size() - 1; ++j) {
         k4[j] = dt * (nu * (u_temp[j + 1] - 2 * u_temp[j] + u_temp[j - 1]) / (dy * dy) - dpdx / rho);
