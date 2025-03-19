@@ -32,13 +32,15 @@ std::vector<double> cfl_values; // CFL values
 std::vector<double> time_steps; // Time steps
 std::vector<double> u_max_values; // Maximum velocity values
 std::vector<double> flow_rate_values; // Flow rate values
+std::vector<double> shear_stress_values; // Shear stress values
+
 
 // Function prototypes
 void initialize(int Ny);
 void applyBoundaryConditions(int Ny);
 void solveNavierStokes(int solverType, double dt, int numSteps, int Ny);
 void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl, double flow_rate);
-void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, int Ny, const std::vector<double>& cfl_values, const std::vector<double>& time_steps, const std::vector<double>& u_max_values, const std::vector<double>& flow_rate_values);
+void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, int Ny, const std::vector<double>& cfl_values, const std::vector<double>& time_steps, const std::vector<double>& u_max_values, const std::vector<double>& flow_rate_values, const std::vector<double>& shear_stress_values);
 std::unordered_map<std::string, double> readVariablesFromFile(const std::string& filename);
 
 int main() {
@@ -46,6 +48,8 @@ int main() {
     std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
 
     int solverType;
+    
+	//Read in variables from a file.  If the variables do not exist, prompt the user to enter them.
     std::unordered_map<std::string, double> variables = readVariablesFromFile("input.k");
 
     if (variables.find("dpdx") != variables.end()) {
@@ -129,16 +133,17 @@ int main() {
         return 1;
     }
 
+	// Calculate the number of grid points and time steps
     int Ny = static_cast<int>((y_top - y_bottom) / dy) + 1;
     int numSteps = static_cast<int>(endTime / dt);
 
-    u.resize(Ny, 0.0);
-    u_exact.resize(Ny, 0.0);
+	// Initialize the grid and variables
+	u.resize(Ny, 0.0);                                  // Initialize the velocity vector
+	u_exact.resize(Ny, 0.0);                            // Initialize the exact solution vector
 
     initialize(Ny);
-    plt::ion(); // Enable interactive mode
-    solveNavierStokes(solverType, dt, numSteps, Ny);
-    //plt::ioff(); // Disable interactive mode
+    plt::ion();                                         // Enable interactive mode
+	solveNavierStokes(solverType, dt, numSteps, Ny);    // Solve the Navier-Stokes equations
 
     // Wait for user input before terminating
     std::cout << "Press any key to exit..." << std::endl;
@@ -200,11 +205,9 @@ void solveNavierStokes(int solverType, double dt, int numSteps, int Ny) {
         // Calculate CFL number if explicit solver is used
         double cfl = 0.0;
         double u_max = *std::max_element(u.begin(), u.end());
-        //if (solverType == 0) {
-            cfl = u_max * dt / dy;
-            cfl_values.push_back(cfl);
-            time_steps.push_back(t * dt);
-        //}
+        cfl = u_max * dt / dy;
+        cfl_values.push_back(cfl);
+        time_steps.push_back(t * dt);
 
         // Store u_max values
         u_max_values.push_back(u_max);
@@ -216,21 +219,26 @@ void solveNavierStokes(int solverType, double dt, int numSteps, int Ny) {
         }
         flow_rate_values.push_back(flow_rate);
 
+        // Calculate and store shear stress at the wall
+        double shear_stress = nu * (u[1] - u[0]) / dy;
+        shear_stress_values.push_back(shear_stress);
+
         if (t % printStepInterval == 0) {
             printVelocities(u, u_exact, cfl, flow_rate); // Print velocities, exact solution, CFL, and flow rate at specified intervals
-            plotVelocities(u, u_exact, Ny, cfl_values, time_steps, u_max_values, flow_rate_values);
+            plotVelocities(u, u_exact, Ny, cfl_values, time_steps, u_max_values, flow_rate_values, shear_stress_values);
             plt::draw(); // Update the plot
             plt::pause(0.01); // Pause for a short time to create animation effect
             plt::clf(); // Clear the current figure
         }
     }
-    plotVelocities(u, u_exact, Ny, cfl_values, time_steps, u_max_values, flow_rate_values); // Plot velocities and exact solution after the final time step
+    plotVelocities(u, u_exact, Ny, cfl_values, time_steps, u_max_values, flow_rate_values, shear_stress_values); // Plot velocities and exact solution after the final time step
     plt::show(); // Keep the plot window open
     // Wait for user input before terminating
     std::cout << "N O R M A L  T E R M I N A T I O N" << std::endl;
     std::cin.get();
     std::cin.get();
 }
+
 
 void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl, double flow_rate) {
     std::cout << "Velocities: ";
@@ -249,33 +257,39 @@ void printVelocities(const std::vector<double>& u, const std::vector<double>& u_
     std::cout << "Flow Rate: " << flow_rate << std::endl;
 }
 
-void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, int Ny, const std::vector<double>& cfl_values, const std::vector<double>& time_steps, const std::vector<double>& u_max_values, const std::vector<double>& flow_rate_values) {
+void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, int Ny, const std::vector<double>& cfl_values, const std::vector<double>& time_steps, const std::vector<double>& u_max_values, const std::vector<double>& flow_rate_values, const std::vector<double>& shear_stress_values) {
     std::vector<double> y(Ny);
     for (int j = 0; j < Ny; ++j) {
         y[j] = y_bottom + j * dy;
     }
 
-    plt::subplot(4, 1, 1);
+    plt::subplot(2, 2, 1);
     plt::named_plot("Numerical", u, y, "r-");
     plt::named_plot("Exact", u_exact, y, "b--");
-    plt::xlabel("u");
-    plt::ylabel("y");
+    plt::xlabel("Velocity, u");
+    plt::ylabel("Length, y");
     plt::legend();
 
-    //plt::subplot(4, 1, 2);
+    //plt::subplot(2, 2, 3);
     //plt::semilogy(time_steps, cfl_values, "g-");
     //plt::xlabel("Time");
     //plt::ylabel("CFL");
 
-    //plt::subplot(4, 1, 3);
+    //plt::subplot(2, 2, 3);
     //plt::plot(time_steps, u_max_values, "b-");
     //plt::xlabel("Time");
     //plt::ylabel("u_max");
 
-    plt::subplot(4, 1, 4);
+    plt::subplot(2, 2, 2);
     plt::plot(time_steps, flow_rate_values, "m-");
     plt::xlabel("Time");
-    plt::ylabel("Flow Rate");
+    plt::ylabel("Flow Rate, Q");
+
+    plt::subplot(2, 2, 4);
+    plt::plot(time_steps, shear_stress_values, "c-");
+    plt::xlabel("Time");
+    plt::ylabel("Shear Stress");
 
     plt::show();
 }
+
