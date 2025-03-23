@@ -5,3 +5,5 @@ endTime 1
 dy .1
 y_bottom 0
 y_top 1
+printInterval 0.1
+analysisType 0

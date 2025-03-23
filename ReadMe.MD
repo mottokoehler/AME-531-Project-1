@@ -8,23 +8,33 @@ This project solves the Navier-Stokes equations using different numerical method
 - Visual Studio 2019 or later
 - `matplotlibcpp` for plotting
 - `matplotlib` and `Python` for `matplotlibcpp`
+- ****Python 3.10 or lower****
 
 ## Installation
 
-### Install `matplotlibcpp`
-1. Clone the `matplotlibcpp` repository:
-2. Copy the `matplotlibcpp.h` file to your project directory.
-
 ### Install `matplotlib` and `Python`
 1. Install Python from [python.org](https://www.python.org/).
-2. Install `matplotlib` using pip:
+    Ensure version 3.8 is installed (only version tested with, but 3.11+ will definitely not work)
+2. Install `matplotlib` using pip:  
+   pip install matplotlib
+3. Install 'numpy' using pip:
+   pip install numpy
+
+### Install `matplotlibcpp`
+1. Clone the `matplotlibcpp` repository:  https://github.com/lava/matplotlib-cpp
+2. Copy the `matplotlibcpp.h` file to your project directory.
 
 ## Project Setup
 1. Open the project in Visual Studio.
 2. Ensure that the include directories and library directories are set up correctly:
    - Right-click on the project in Solution Explorer and select `Properties`.
-   - Go to `C/C++ > General > Additional Include Directories` and add the path to `matplotlibcpp.h`.
-   - Go to `Linker > General > Additional Library Directories` and add the path to the Python libraries.
+   - Go to `VC++ Directories > Include Directories>` and add the path to `matplotlib` and 'eigen-3.4.0' subdirectories.
+    - \Python38\Lib\site-packages\numpy\core\include
+    - \Python38\include
+    - \source\repos\mottokoehler\AME-531-Project-1\AME 531 Project 1\matplotlib
+    - \source\repos\mottokoehler\AME-531-Project-1\AME 531 Project 1\eigen-3.4.0
+   - Go to `VC++ Directories > Library Directories>` and add the path to the Python libraries.
+    - \Python38\libs
 
 ## Build Instructions
 1. Open the project in Visual Studio.

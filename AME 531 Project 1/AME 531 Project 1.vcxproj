@@ -75,7 +75,7 @@
     <IncludePath>C:\Python38\Lib\site-packages\numpy\core\include;C:\Python38\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\ottom\source\repos\AME 531 Project 1\AME 531 Project 1\matplotlib;C:\Users\ottom\source\repos\AME 531 Project 1\AME 531 Project 1\eigen-3.4.0;C:\Python38\Lib\site-packages\numpy\core\include;C:\Python38\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Python38\Lib\site-packages\numpy\core\include;C:\Python38\include;C:\Users\OTTO\source\repos\mottokoehler\AME-531-Project-1\AME 531 Project 1\matplotlib;C:\Users\OTTO\source\repos\mottokoehler\AME-531-Project-1\AME 531 Project 1\eigen-3.4.0;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Python38\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -129,12 +129,14 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -142,11 +144,13 @@
     <ClCompile Include="exact_solver.cpp" />
     <ClCompile Include="explicit_solver.cpp" />
     <ClCompile Include="implicit_solver.cpp" />
+    <ClCompile Include="printdata.cpp" />
     <ClCompile Include="runge_kutta_solver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exact_solver.h" />
     <ClInclude Include="explicit_solver.h" />
+    <ClInclude Include="printdata.h" />
     <ClInclude Include="runge_kutta_solver.h" />
     <ClInclude Include="implicit_solver.h" />
     <ClInclude Include="matplotlib\matplotlibcpp.h" />
