@@ -151,6 +151,9 @@
     <ClInclude Include="implicit_solver.h" />
     <ClInclude Include="matplotlib\matplotlibcpp.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\ReadMe.MD" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
