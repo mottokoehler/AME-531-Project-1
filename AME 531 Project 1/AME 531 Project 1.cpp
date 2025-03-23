@@ -1,51 +1,59 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <algorithm> // Include algorithm for std::max_element
+#include <algorithm>                // Include algorithm for std::max_element
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
 #include <filesystem>
-#include "explicit_solver.h"
-#include "implicit_solver.h"
-#include "exact_solver.h"
-#include "runge_kutta_solver.h" // Include Runge-Kutta solver
-#include "matplotlibcpp.h" // Include matplotlib-cpp
+#include "explicit_solver.h"        // Include explicit solver
+#include "implicit_solver.h"        // Include implicit solver
+#include "exact_solver.h"           // Include exact solver
+#include "runge_kutta_solver.h"     // Include Runge-Kutta solver
+#include "matplotlibcpp.h"          // Include matplotlib-cpp for plotting
+#include <cstdlib>                  // for std::exit()
 
 namespace plt = matplotlibcpp;
 
 // User-supplied variables
-double dpdx; // Change in pressure over x-direction
-double rho;  // Density
-double nu;   // Kinematic viscosity
-double dt;   // Time step
-double endTime; // End time
-double dy; // Grid spacing in y-direction
-double y_bottom; // Location of the bottom wall
-double y_top; // Location of the top wall
-double printInterval; // Time interval for printing velocity values
+double dpdx;                        // Change in pressure over x-direction
+double rho;                         // Density
+double nu;                          // Kinematic viscosity
+double dt;                          // Time step
+double endTime;                     // End time
+double dy;                          // Grid spacing in y-direction
+double y_bottom;                    // Location of the bottom wall
+double y_top;                       // Location of the top wall
+double printInterval;               // Time interval for printing velocity values
+double ctime_steps;                  // Current Time Step
 
 // Define grid and variables
 std::vector<double> u;
-std::vector<double> u_exact; // Exact solution
-std::vector<double> cfl_values; // CFL values
-std::vector<double> time_steps; // Time steps
-std::vector<double> u_max_values; // Maximum velocity values
-std::vector<double> flow_rate_values; // Flow rate values
-std::vector<double> shear_stress_values; // Shear stress values
+std::vector<double> u_exact;        // Exact solution
+std::vector<double> cfl_values;     // CFL values
+std::vector<double> time_steps;     // Time steps
+std::vector<double> u_max_values;   // Maximum velocity values
+std::vector<double> flow_rate_values;       // Flow rate values
+std::vector<double> shear_stress_values;    // Shear stress values
+double error;           // Error Calculation
 
 
 // Function prototypes
 void initialize(int Ny);
 void applyBoundaryConditions(int Ny);
 void solveNavierStokes(int solverType, double dt, int numSteps, int Ny);
-void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl, double flow_rate);
+void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl, double flow_rateconst, double error, double ctime_steps, double shear_stress);
 void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, int Ny, const std::vector<double>& cfl_values, const std::vector<double>& time_steps, const std::vector<double>& u_max_values, const std::vector<double>& flow_rate_values, const std::vector<double>& shear_stress_values);
 std::unordered_map<std::string, double> readVariablesFromFile(const std::string& filename);
 
 int main() {
     // Print the current working directory
     std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
+    std::cout << "Place input.k file in current working directory" << std::endl;
+    std::cout << "Sample format for input.k:" << std::endl;
+    std::cout << "dpdx -1  //input.k has variables to be read in and their values" << std::endl;
+    std::cout << "................................................................" << std::endl;
+
 
     int solverType;
     
@@ -123,7 +131,7 @@ int main() {
         std::cout << "Enter time interval for printing velocity values: ";
         std::cin >> printInterval;
     }
-
+    //printInterval = printInterval - dt;
     std::cout << "Select solver type (0 for explicit, 1 for implicit, 2 for Runge-Kutta): ";
     std::cin >> solverType;
 
@@ -135,7 +143,7 @@ int main() {
 
 	// Calculate the number of grid points and time steps
     int Ny = static_cast<int>((y_top - y_bottom) / dy) + 1;
-    int numSteps = static_cast<int>(endTime / dt);
+    int numSteps = static_cast<int>(1 + endTime / dt);
 
 	// Initialize the grid and variables
 	u.resize(Ny, 0.0);                                  // Initialize the velocity vector
@@ -147,7 +155,6 @@ int main() {
 
     // Wait for user input before terminating
     std::cout << "Press any key to exit..." << std::endl;
-    std::cin.get();
     std::cin.get();
 
     return 0;
@@ -189,15 +196,16 @@ void applyBoundaryConditions(int Ny) {
 
 void solveNavierStokes(int solverType, double dt, int numSteps, int Ny) {
     int printStepInterval = static_cast<int>(printInterval / dt);
-    for (int t = 0; t < numSteps; ++t) {
+    for (int t = 1; t < numSteps; ++t) {
+        
         if (solverType == 1) {
-            implicitSolver(u, dt, dy, nu, dpdx, rho);
+            implicitSolver(u, dt, dy, nu, dpdx, rho);               //Call Implicit`
         }
         else if (solverType == 2) {
-            rungeKuttaSolver(u, dt, dy, nu, dpdx, rho);
+            rungeKuttaSolver(u, dt, dy, nu, dpdx, rho);             //Call 4th Order RK
         }
         else {
-            explicitSolver(u, dt, dy, nu, dpdx, rho);
+            explicitSolver(u, dt, dy, nu, dpdx, rho);               //Call Explicit
         }
         applyBoundaryConditions(Ny);
         exactSolver(u_exact, dpdx, rho, nu, y_top - y_bottom, Ny); // Calculate exact solution
@@ -205,9 +213,17 @@ void solveNavierStokes(int solverType, double dt, int numSteps, int Ny) {
         // Calculate CFL number if explicit solver is used
         double cfl = 0.0;
         double u_max = *std::max_element(u.begin(), u.end());
+        double u_max_exact = *std::max_element(u_exact.begin(), u_exact.end());
+        double error = 100 * (u_max_exact - u_max) / u_max_exact;
+        //std::cout << "Error for u_max = " << error << std::endl;
         cfl = u_max * dt / dy;
+        if (cfl > 1) {
+            std::cout << "CFL exceeds safe limit of 1, solution likely unstable" << std::endl;
+            std::cin.get();
+            }
         cfl_values.push_back(cfl);
         time_steps.push_back(t * dt);
+        ctime_steps = ctime_steps + dt;
 
         // Store u_max values
         u_max_values.push_back(u_max);
@@ -224,15 +240,15 @@ void solveNavierStokes(int solverType, double dt, int numSteps, int Ny) {
         shear_stress_values.push_back(shear_stress);
 
         if (t % printStepInterval == 0) {
-            printVelocities(u, u_exact, cfl, flow_rate); // Print velocities, exact solution, CFL, and flow rate at specified intervals
+            printVelocities(u, u_exact, cfl, flow_rate, error, ctime_steps, shear_stress); // Print velocities, exact solution, CFL, and flow rate at specified intervals
             plotVelocities(u, u_exact, Ny, cfl_values, time_steps, u_max_values, flow_rate_values, shear_stress_values);
-            plt::draw(); // Update the plot
-            plt::pause(0.01); // Pause for a short time to create animation effect
-            plt::clf(); // Clear the current figure
+            plt::draw();            // Update the plot
+            plt::pause(0.01);       // Pause for a short time to create animation effect
+            plt::clf();             // Clear the current figure
         }
     }
     plotVelocities(u, u_exact, Ny, cfl_values, time_steps, u_max_values, flow_rate_values, shear_stress_values); // Plot velocities and exact solution after the final time step
-    plt::show(); // Keep the plot window open
+    plt::show();                    // Keep the plot window open
     // Wait for user input before terminating
     std::cout << "N O R M A L  T E R M I N A T I O N" << std::endl;
     std::cin.get();
@@ -240,52 +256,91 @@ void solveNavierStokes(int solverType, double dt, int numSteps, int Ny) {
 }
 
 
-void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl, double flow_rate) {
-    std::cout << "Velocities: ";
+void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl, double flow_rate, double error, double ctime_steps, double shear_stress) {
+    
+    std::ofstream outf{ "results_velocity.out", std::ios::app };  //Velocity out file
+        outf << "Time = ";
+        outf << ctime_steps;
+        outf << "\n";
+        for (const auto& vel : u) {
+            outf << vel;
+            outf << ",";
+        }
+        outf << "\n";
+
+    
+    std::ofstream outf2{ "results_CFL.out", std::ios::app };
+        outf2 << "Time = ";
+        outf2 << ctime_steps;
+        outf2 << "\n";
+        outf2 << cfl;
+        outf2 << "\n";
+
+    
+    std::ofstream outf3{ "results_Q.out", std::ios::app };
+        outf3 << "Time = ";
+        outf3 << ctime_steps;
+        outf3 << "\n";
+        outf3 << flow_rate;
+        outf3 << "\n";
+
+    std::ofstream outf4{ "results_shear.out", std::ios::app };
+        outf4 << "Time = ";
+        outf4 << ctime_steps;
+        outf4 << "\n";
+        outf4 << shear_stress;
+        outf4 << "\n";
+
+    // Print values to screen //
+    std::cout << "Time Step: " << ctime_steps << std::endl;
+    std::cout << "Velocities: ";  //Print Velocities from Numerical
     for (const auto& vel : u) {
         std::cout << vel << " ";
     }
     std::cout << std::endl;
-
-    std::cout << "Exact Velocities: ";
+    
+    std::cout << "Exact Velocities: ";  //Print Velocities from Exact
     for (const auto& vel : u_exact) {
         std::cout << vel << " ";
     }
     std::cout << std::endl;
-
-    std::cout << "CFL Number: " << cfl << std::endl;
-    std::cout << "Flow Rate: " << flow_rate << std::endl;
+    
+    std::cout << "CFL Number: " << cfl << std::endl;  //Print CFL (should add something to stop this for implicit)
+    std::cout << "Flow Rate: " << flow_rate << std::endl;  //Print Flow Rate
+    std::cout << "% Error for u_max = " << error << std::endl;  //Print % Error
 }
 
 void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, int Ny, const std::vector<double>& cfl_values, const std::vector<double>& time_steps, const std::vector<double>& u_max_values, const std::vector<double>& flow_rate_values, const std::vector<double>& shear_stress_values) {
     std::vector<double> y(Ny);
+    //plt::figure_size(800, 300);
     for (int j = 0; j < Ny; ++j) {
         y[j] = y_bottom + j * dy;
     }
 
-    plt::subplot(2, 2, 1);
+    //plt::figure_size(800, 300);
+    plt::subplot(1, 4, 1);
     plt::named_plot("Numerical", u, y, "r-");
     plt::named_plot("Exact", u_exact, y, "b--");
     plt::xlabel("Velocity, u");
     plt::ylabel("Length, y");
     plt::legend();
 
-    //plt::subplot(2, 2, 3);
-    //plt::semilogy(time_steps, cfl_values, "g-");
-    //plt::xlabel("Time");
-    //plt::ylabel("CFL");
+    plt::subplot(1, 4, 2);
+    plt::semilogy(time_steps, cfl_values, "g-");
+    plt::xlabel("Time");
+    plt::ylabel("CFL");
 
     //plt::subplot(2, 2, 3);
     //plt::plot(time_steps, u_max_values, "b-");
     //plt::xlabel("Time");
     //plt::ylabel("u_max");
 
-    plt::subplot(2, 2, 2);
+    plt::subplot(1, 4, 3);
     plt::plot(time_steps, flow_rate_values, "m-");
     plt::xlabel("Time");
     plt::ylabel("Flow Rate, Q");
 
-    plt::subplot(2, 2, 4);
+    plt::subplot(1, 4, 4);
     plt::plot(time_steps, shear_stress_values, "c-");
     plt::xlabel("Time");
     plt::ylabel("Shear Stress");

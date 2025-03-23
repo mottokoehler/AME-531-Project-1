@@ -1,9 +1,7 @@
 dpdx -8
 rho 1
 nu 1
-dt .001
 endTime 1
 dy .1
 y_bottom 0
 y_top 1
-printInterval .1
