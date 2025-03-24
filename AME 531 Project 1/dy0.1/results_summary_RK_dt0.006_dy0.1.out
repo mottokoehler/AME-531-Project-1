@@ -1,0 +1,7 @@
+Time = 0.996
+Max Velocity = 0.99994
+CFL = 0.0599964
+Flow Rate = 0.659962
+Shear Stress = 3.59981
+dy = 0.1
+dt = 0.006

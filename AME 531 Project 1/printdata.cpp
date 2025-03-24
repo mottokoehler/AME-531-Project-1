@@ -4,7 +4,7 @@
 #include <sstream>
 #include <algorithm> // For std::max_element
 
-void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl, double flow_rate, double error, double ctime_steps, double shear_stress, const std::string& analysisType, double dt, double dy) {
+void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl, double flow_rate, double error, double ctime_steps, double shear_stress, const std::string& analysisType, double dt, double dy, double avg_timestep) {
     // Construct the filenames based on analysis type, dt, and dy
     std::ostringstream velocityFilename;
     velocityFilename << "results_velocity_" << analysisType << "_dt" << dt << "_dy" << dy << ".out";
@@ -64,6 +64,7 @@ void printVelocities(const std::vector<double>& u, const std::vector<double>& u_
     outfSummary << "Shear Stress = " << shear_stress << "\n";
     outfSummary << "dy = " << dy << "\n";
     outfSummary << "dt = " << dt << "\n";
+    outfSummary << "Average Timestep Length = " << avg_timestep << " seconds\n";
 
     // Print values to screen //
     std::cout << "Time Step: " << ctime_steps << std::endl;
@@ -82,4 +83,5 @@ void printVelocities(const std::vector<double>& u, const std::vector<double>& u_
     std::cout << "CFL Number: " << cfl << std::endl;  // Print CFL (should add something to stop this for implicit)
     std::cout << "Flow Rate: " << flow_rate << std::endl;  // Print Flow Rate
     std::cout << "% Error for u_max = " << error << std::endl;  // Print % Error
+    std::cout << "Average Timestep Length: " << avg_timestep << " seconds" << std::endl;
 }

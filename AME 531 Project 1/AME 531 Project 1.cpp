@@ -46,7 +46,7 @@ void initialize(int Ny);
 void applyBoundaryConditions(int Ny);
 void solveNavierStokes(int solverType, double dt, int numSteps, int Ny, const std::string& analysisType);
 //void printVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, double cfl, double flow_rateconst, double error, double ctime_steps, double shear_stress);
-void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, int Ny, const std::vector<double>& cfl_values, const std::vector<double>& time_steps, const std::vector<double>& u_max_values, const std::vector<double>& flow_rate_values, const std::vector<double>& shear_stress_values);
+void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, int Ny, const std::vector<double>& cfl_values, const std::vector<double>& time_steps, const std::vector<double>& u_max_values, const std::vector<double>& flow_rate_values, const std::vector<double>& shear_stress_values, const std::string& analysisType);
 std::unordered_map<std::string, double> readVariablesFromFile(const std::string& filename);
 
 int main() {
@@ -135,6 +135,11 @@ int main() {
         std::cin >> printInterval;
     }
 
+    // Check if dt > printInterval and set printInterval = dt if true
+    if (dt > printInterval) {
+        printInterval = dt;
+    }
+
     std::cout << "Select solver type (0 for explicit, 1 for implicit, 2 for Runge-Kutta): ";
     std::cin >> solverType;
 
@@ -150,10 +155,10 @@ int main() {
     }
 
     // Validate printInterval
-    if (printInterval < dt || static_cast<int>(printInterval / dt) * dt != printInterval) {
-        std::cerr << "Invalid print interval. It must be greater than or equal to the time step and a multiple of the time step." << std::endl;
-        return 1;
-    }
+    //if (printInterval < dt || static_cast<int>(printInterval / dt) * dt != printInterval) {
+    //    std::cerr << "Invalid print interval. It must be greater than or equal to the time step and a multiple of the time step." << std::endl;
+    //    return 1;
+    //}
 
     // Calculate the number of grid points and time steps
     int Ny = static_cast<int>((y_top - y_bottom) / dy) + 1;
@@ -210,8 +215,13 @@ void applyBoundaryConditions(int Ny) {
 
 void solveNavierStokes(int solverType, double dt, int numSteps, int Ny, const std::string& analysisType) {
     int printStepInterval = static_cast<int>(printInterval / dt);
-    for (int t = 1; t < numSteps; ++t) {
+    using namespace std::chrono;
 
+    std::vector<double> timestep_lengths;
+
+    for (int t = 1; t < numSteps; ++t) {
+        // Start timing
+        auto start = high_resolution_clock::now();
         if (solverType == 1) {
             implicitSolver(u, dt, dy, nu, dpdx, rho);               // Call Implicit
         }
@@ -223,6 +233,13 @@ void solveNavierStokes(int solverType, double dt, int numSteps, int Ny, const st
         }
         applyBoundaryConditions(Ny);
         exactSolver(u_exact, dpdx, rho, nu, y_top - y_bottom, Ny); // Calculate exact solution
+    
+        // End timing
+        auto end = high_resolution_clock::now();
+        duration<double> elapsed = end - start;
+        timestep_lengths.push_back(elapsed.count());
+        //std::cout << "Time taken for this timestep: " << elapsed.count() << " seconds" << std::endl;
+
 
         // Calculate CFL number if explicit solver is used
         double cfl = 0.0;
@@ -249,41 +266,48 @@ void solveNavierStokes(int solverType, double dt, int numSteps, int Ny, const st
         double shear_stress = nu * (u[1] - u[0]) / dy;
         shear_stress_values.push_back(shear_stress);
 
-        //Issue Warning if CFL exceeds 1, option to about or continue
+        // Issue Warning if CFL exceeds 1, option to about or continue
         if (cfl > 1 && !cflWarningDisplayed) {
             std::cout << "CFL exceeds safe limit of 1, solution likely unstable" << std::endl;
             std::cout << "Do you want to exit the program? (y/n): ";
             char choice;
             std::cin >> choice;
             if (choice == 'y' || choice == 'Y') {
-                printVelocities(u, u_exact, cfl, flow_rate, error, ctime_steps, shear_stress, analysisType, dt, dy);
+                double avg_timestep = std::accumulate(timestep_lengths.begin(), timestep_lengths.end(), 0.0) / timestep_lengths.size();
+                printVelocities(u, u_exact, cfl, flow_rate, error, ctime_steps, shear_stress, analysisType, dt, dy, avg_timestep);
                 exit(0);
             }
             else {
                 cflWarningDisplayed = true;
             }
-		}
+        }
         if (t % printStepInterval == 0) {
-            printVelocities(u, u_exact, cfl, flow_rate, error, ctime_steps, shear_stress, analysisType, dt, dy); // Print velocities, exact solution, CFL, and flow rate at specified intervals
-            plotVelocities(u, u_exact, Ny, cfl_values, time_steps, u_max_values, flow_rate_values, shear_stress_values);
+            double avg_timestep = std::accumulate(timestep_lengths.begin(), timestep_lengths.end(), 0.0) / timestep_lengths.size();
+            printVelocities(u, u_exact, cfl, flow_rate, error, ctime_steps, shear_stress, analysisType, dt, dy, avg_timestep); // Print velocities, exact solution, CFL, and flow rate at specified intervals
+            plotVelocities(u, u_exact, Ny, cfl_values, time_steps, u_max_values, flow_rate_values, shear_stress_values, analysisType);
             plt::draw();            // Update the plot
             plt::pause(0.01);       // Pause for a short time to create animation effect
             plt::clf();             // Clear the current figure
         }
     }
-    printVelocities(u, u_exact, cfl_values.back(), flow_rate_values.back(), error, ctime_steps, shear_stress_values.back(), analysisType, dt, dy); // Print final velocities and exact solution
-    plotVelocities(u, u_exact, Ny, cfl_values, time_steps, u_max_values, flow_rate_values, shear_stress_values); // Plot velocities and exact solution after the final time step
-
+    double avg_timestep = std::accumulate(timestep_lengths.begin(), timestep_lengths.end(), 0.0) / timestep_lengths.size();
+    printVelocities(u, u_exact, cfl_values.back(), flow_rate_values.back(), error, ctime_steps, shear_stress_values.back(), analysisType, dt, dy, avg_timestep); // Print final velocities and exact solution
+    plotVelocities(u, u_exact, Ny, cfl_values, time_steps, u_max_values, flow_rate_values, shear_stress_values, analysisType); // Plot velocities and exact solution after the final time step
 }
 
-void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, int Ny, const std::vector<double>& cfl_values, const std::vector<double>& time_steps, const std::vector<double>& u_max_values, const std::vector<double>& flow_rate_values, const std::vector<double>& shear_stress_values) {
+void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_exact, int Ny, const std::vector<double>& cfl_values, const std::vector<double>& time_steps, const std::vector<double>& u_max_values, const std::vector<double>& flow_rate_values, const std::vector<double>& shear_stress_values, const std::string& analysisType) {
     std::vector<double> y(Ny);
-    //plt::figure_size(800, 300);
     for (int j = 0; j < Ny; ++j) {
         y[j] = y_bottom + j * dy;
     }
 
-    
+    // Create the title string
+    std::ostringstream title;
+	title << "Analysis Type: " << analysisType << ", dt: " << dt << ", dy: " << dy << ", time: " << time_steps.back();
+
+    // Set the title for the entire figure
+    plt::suptitle(title.str());
+
     plt::subplot(1, 4, 1);
     plt::named_plot("Numerical", u, y, "r-");
     plt::named_plot("Exact", u_exact, y, "b--");
@@ -296,11 +320,6 @@ void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_e
     plt::xlabel("Time");
     plt::ylabel("CFL");
 
-    //plt::subplot(2, 2, 3);
-    //plt::plot(time_steps, u_max_values, "b-");
-    //plt::xlabel("Time");
-    //plt::ylabel("u_max");
-
     plt::subplot(1, 4, 3);
     plt::plot(time_steps, flow_rate_values, "m-");
     plt::xlabel("Time");
@@ -311,8 +330,12 @@ void plotVelocities(const std::vector<double>& u, const std::vector<double>& u_e
     plt::xlabel("Time");
     plt::ylabel("Shear Stress");
 
-	plt::tight_layout();
+    plt::tight_layout();
 
-    //plt::show();
+    // Save the plot as a picture file
+    std::ostringstream filename;
+    filename << "plot_" << analysisType << "_dt" << dt << "_dy" << dy << ".jpg";
+    plt::save(filename.str());
 }
+
 
