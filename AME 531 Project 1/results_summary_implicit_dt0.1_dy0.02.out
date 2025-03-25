@@ -1,0 +1,8 @@
+Time = 1
+Max Velocity = 0.998922
+CFL = 4.99461
+Flow Rate = 0.665714
+Shear Stress = 3.91662
+dy = 0.02
+dt = 0.1
+Average Timestep Length = 5.055e-05 seconds

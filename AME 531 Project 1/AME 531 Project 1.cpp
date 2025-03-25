@@ -243,10 +243,10 @@ void solveNavierStokes(int solverType, double dt, int numSteps, int Ny, const st
 
         // Calculate CFL number if explicit solver is used
         double cfl = 0.0;
-        double u_max = *std::max_element(u.begin(), u.end());
-        double u_max_exact = *std::max_element(u_exact.begin(), u_exact.end());
-        double error = 100 * (u_max_exact - u_max) / u_max_exact;
-        cfl = u_max * dt / dy;
+		double u_max = *std::max_element(u.begin(), u.end());  // Find the maximum velocity
+		double u_max_exact = *std::max_element(u_exact.begin(), u_exact.end());  // Find the maximum velocity of the exact solution
+		double error = 100 * (u_max_exact - u_max) / u_max_exact; // Calculate error
+		cfl = u_max * dt / dy;  // Calculate CFL number
 
         cfl_values.push_back(cfl);
         time_steps.push_back(t * dt);
@@ -267,20 +267,20 @@ void solveNavierStokes(int solverType, double dt, int numSteps, int Ny, const st
         shear_stress_values.push_back(shear_stress);
 
         // Issue Warning if CFL exceeds 1, option to about or continue
-        if (cfl > 1 && !cflWarningDisplayed) {
-            std::cout << "CFL exceeds safe limit of 1, solution likely unstable" << std::endl;
-            std::cout << "Do you want to exit the program? (y/n): ";
-            char choice;
-            std::cin >> choice;
-            if (choice == 'y' || choice == 'Y') {
-                double avg_timestep = std::accumulate(timestep_lengths.begin(), timestep_lengths.end(), 0.0) / timestep_lengths.size();
-                printVelocities(u, u_exact, cfl, flow_rate, error, ctime_steps, shear_stress, analysisType, dt, dy, avg_timestep);
-                exit(0);
-            }
-            else {
-                cflWarningDisplayed = true;
-            }
-        }
+        //if (cfl > 1 && !cflWarningDisplayed) {
+        //    std::cout << "CFL exceeds safe limit of 1, solution likely unstable" << std::endl;
+        //    std::cout << "Do you want to exit the program? (y/n): ";
+        //    char choice;
+        //    std::cin >> choice;
+        //    if (choice == 'y' || choice == 'Y') {
+        //        double avg_timestep = std::accumulate(timestep_lengths.begin(), timestep_lengths.end(), 0.0) / timestep_lengths.size();
+        //        printVelocities(u, u_exact, cfl, flow_rate, error, ctime_steps, shear_stress, analysisType, dt, dy, avg_timestep);
+        //        exit(0);
+        //    }
+        //    else {
+        //        cflWarningDisplayed = true;
+        //    }
+        //}
         if (t % printStepInterval == 0) {
             double avg_timestep = std::accumulate(timestep_lengths.begin(), timestep_lengths.end(), 0.0) / timestep_lengths.size();
             printVelocities(u, u_exact, cfl, flow_rate, error, ctime_steps, shear_stress, analysisType, dt, dy, avg_timestep); // Print velocities, exact solution, CFL, and flow rate at specified intervals

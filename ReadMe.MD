@@ -14,7 +14,7 @@ This project solves the Navier-Stokes equations using different numerical method
 
 ### Install `matplotlib` and `Python`
 1. Install Python from [python.org](https://www.python.org/).
-    Ensure version 3.8 is installed (only version tested with, but 3.11+ will definitely not work)
+    Ensure version 3.8 is installed (only version tested with, but 3.11+ will definitely NOT work)
 2. Install `matplotlib` using pip:  
    pip install matplotlib
 3. Install 'numpy' using pip:
